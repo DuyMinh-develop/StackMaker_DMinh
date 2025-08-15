@@ -177,6 +177,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 7601132885291357786}
     m_Modifications:
+    - target: {fileID: 2036157861634648321, guid: 3d35b4769319dda4d8fc47072ba5a7fb, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2036157861634648321, guid: 3d35b4769319dda4d8fc47072ba5a7fb, type: 3}
+      propertyPath: m_IsTrigger
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4737285886566994016, guid: 3d35b4769319dda4d8fc47072ba5a7fb, type: 3}
       propertyPath: m_Name
       value: zhangaikuai

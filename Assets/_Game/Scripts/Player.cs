@@ -9,11 +9,12 @@ public class Player : MonoBehaviour
     [SerializeField] private float maxRaycastDistance = 10f;
     [SerializeField] private GameObject brickPrefab;
     [SerializeField] private LayerMask wallMask;
-
+    [SerializeField] private Transform skin;
+    [SerializeField] private GameManager gameManager;
     private float brickHeight;
     private Vector3 target;
     private Vector3 currentDirection;
-    private bool isMoving = false;
+    public bool isMoving = false;
 
     public List<GameObject> bricks = new List<GameObject>();
     private CapsuleCollider playerCollider;
@@ -44,14 +45,22 @@ public class Player : MonoBehaviour
     private void Update()
     {
         HandleInput();
-        Move();
+    }
+    private void FixedUpdate()
+    {
+        if (isMoving)
+        {
+            Move();
+        }
     }
     private void HandleInput()
     {
+        //if (isMoving) return;
         if (Input.GetMouseButtonDown(0))
         {
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-            if (Physics.Raycast(ray, out RaycastHit hit, maxRaycastDistance))
+            RaycastHit hit;
+            if (Physics.Raycast(ray, out hit, maxRaycastDistance))
             {
                 Vector3 hitPoint = hit.point;
                 Vector3 direction = hitPoint - mainObject.position;
@@ -61,28 +70,20 @@ public class Player : MonoBehaviour
                     currentDirection = new Vector3(Mathf.Sign(direction.x), 0, 0);
                 else
                     currentDirection = new Vector3(0, 0, Mathf.Sign(direction.z));
-                Vector3 rayOrigin = mainObject.position + Vector3.up * 0.5f;
+
+                Vector3 rayOrigin = mainObject.position ;
                 RaycastHit wallHit;
                 if (Physics.Raycast(rayOrigin, currentDirection, out wallHit, maxRaycastDistance, wallMask))
                 {
-                    target = wallHit.point - currentDirection * 0.01f;
+                    target = mainObject.position + currentDirection * (wallHit.distance - playerCollider.radius);
                     target.y = mainObject.position.y;
+                    isMoving = true;
                 }
-                isMoving = true;
             }
-        }
-    }
-    void OnDrawGizmos()
-    {
-        if (mainObject != null)
-        {
-            Gizmos.color = Color.red;
-            Gizmos.DrawRay(mainObject.position + Vector3.up * 0.5f, currentDirection * maxRaycastDistance);
         }
     }
     private void Move()
     {
-        if (!isMoving) return;
         mainObject.position = Vector3.MoveTowards(mainObject.position, target, moveSpeed * Time.deltaTime);
         if (Vector3.Distance(mainObject.position, target) < 0.01f)
         {
@@ -96,44 +97,47 @@ public class Player : MonoBehaviour
         {
             BrickCollection(other.gameObject);
         }
+        if (other.CompareTag("Diamond"))
+        {
+            gameManager.AddScore(1);
+            Destroy(other.gameObject);
+        }
     }
     private void OnCollisionEnter(Collision collision)
     {
-        if (collision.gameObject.CompareTag("DropZone"))
+        if (collision.gameObject.CompareTag("DropZone") && !visitedDropZones.Contains(collision.gameObject))
         {
-            if (!visitedDropZones.Contains(collision.gameObject))
+            visitedDropZones.Add(collision.gameObject);
+            DropBrick(collision.gameObject);
+            if (bricks.Count <= 0)
             {
-                visitedDropZones.Add(collision.gameObject);
-                DropBrick(collision.gameObject);
-                if (bricks.Count <= 0)
-                {
-                    GameOver();
-                }
+                isMoving = false;
+                GameOver();
             }
-        }    
+        }
     }
     private void GameOver()
     {
-        Debug.Log("Game Over");
+        if (GameManager.instance != null)
+        {
+            GameManager.instance.GameOver();
+        }
     }
     public void BrickCollection(GameObject brickObject)
     {
-        brickObject.transform.SetParent(mainObject, true);
-        bricks.Add(brickObject);
-        Brick brick = brickObject.GetComponent<Brick>();
+        GameObject newBrick = Instantiate(brickPrefab);
+        newBrick.transform.SetParent(mainObject, true);
+        bricks.Add(newBrick);
+        Brick brick = newBrick.GetComponent<Brick>();
         brick.gameObject.SetActive(true);
-        Collider collider = brickObject.GetComponent<Collider>();
+        Collider collider = newBrick.GetComponent<Collider>();
         if (collider != null)
         {
-            collider.enabled = false;
+            collider.enabled = false;   
             collider.isTrigger = false;
         }
-        brickObject.transform.localPosition = new Vector3(0, -(bricks.Count - 1) * brickHeight, 0);
-        if (playerCollider != null)
-        {
-            playerCollider.height = capsuleHeight + bricks.Count * brickHeight;
-            playerCollider.center = capsuleCenter - new Vector3(0f, (bricks.Count * brickHeight) / 2f, 0f);
-        }
+        newBrick.transform.localPosition = new Vector3(0, (bricks.Count - 1) * brickHeight, 0);
+        skin.localPosition = new Vector3(0, (bricks.Count - 1) * brickHeight, 0) ;
     }
     private void DropBrick(GameObject brickObject)
     {
@@ -143,11 +147,7 @@ public class Player : MonoBehaviour
             bricks.RemoveAt(bricks.Count - 1);
             lastBrickObject.transform.SetParent(null);
             Destroy(lastBrickObject);
-            if (playerCollider != null)
-            {
-                playerCollider.height = capsuleHeight + bricks.Count * brickHeight;
-                playerCollider.center = capsuleCenter - new Vector3(0f, (bricks.Count * brickHeight) / 2f, 0f);
-            }
+            skin.localPosition = new Vector3(0, (bricks.Count - 1) * brickHeight, 0);
         }
     }
 }

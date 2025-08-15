@@ -8,6 +8,11 @@
         if (collision.gameObject.CompareTag("Player"))
         {
             hiddenBrick.SetActive(true);
-        }    
+            Collider collider = hiddenBrick.gameObject.GetComponent<Collider>();
+            if (collider != null)
+            {
+                collider.enabled = false;
+            }
+        }
     }
 }
