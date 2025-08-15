@@ -99,7 +99,7 @@ public class Player : MonoBehaviour
         }
         if (other.CompareTag("Diamond"))
         {
-            gameManager.AddScore(1);
+            /*gameManager.AddScore(1)*/;
             Destroy(other.gameObject);
         }
     }
